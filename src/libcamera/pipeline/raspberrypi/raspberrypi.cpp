@@ -1516,7 +1516,12 @@ int PipelineHandlerRPi::prepareBuffers(Camera *camera)
 {
 	RPiCameraData *data = cameraData(camera);
 	unsigned int numRawBuffers = 0;
+	unsigned int maxFrameSize = 0;
 	int ret;
+
+	for (Stream *s : camera->streams()) {
+		maxFrameSize = std::max(maxFrameSize, s->configuration().frameSize);
+	}
 
 	for (Stream *s : camera->streams()) {
 		if (isRaw(s->configuration().pixelFormat)) {
@@ -1567,6 +1572,9 @@ int PipelineHandlerRPi::prepareBuffers(Camera *camera)
 			 */
 			numBuffers = 1;
 		}
+
+		if (maxFrameSize > 30000000)
+			numBuffers = 1;
 
 		ret = stream->prepareBuffers(numBuffers);
 		if (ret < 0)
