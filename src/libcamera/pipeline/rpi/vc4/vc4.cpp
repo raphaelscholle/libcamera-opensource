@@ -235,6 +235,7 @@ int PipelineHandlerVc4::prepareBuffers(Camera *camera)
 	unsigned int minUnicamBuffers = data->config_.minUnicamBuffers;
 	unsigned int minTotalUnicamBuffers = data->config_.minTotalUnicamBuffers;
 	unsigned int numRawBuffers = 0, minIspBuffers = 1;
+	unsigned int maxFrameSize = 0;
 	int ret;
 
 	if (data->unicam_[Unicam::Image].getFlags() & StreamFlag::External) {
@@ -272,6 +273,9 @@ int PipelineHandlerVc4::prepareBuffers(Camera *camera)
 		if (!data->dropFrameCount_ && data->config_.output0MandatoryStream)
 			minIspBuffers = 0;
 	}
+
+	for (auto const stream : data->streams_)
+		maxFrameSize = std::max(maxFrameSize, stream->configuration().frameSize);
 
 	/* Decide how many internal buffers to allocate. */
 	for (auto const stream : data->streams_) {
@@ -321,6 +325,9 @@ int PipelineHandlerVc4::prepareBuffers(Camera *camera)
 			numBuffers = 1;
 			LOG(RPI, Debug) << "Other numBuffers " << numBuffers;
 		}
+
+		if (maxFrameSize > 30000000)
+			numBuffers = 1;
 
 		ret = stream->prepareBuffers(numBuffers);
 		if (ret < 0)
