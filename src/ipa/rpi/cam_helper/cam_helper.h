@@ -99,7 +99,7 @@ public:
 	virtual unsigned int hideFramesModeSwitch() const;
 	virtual unsigned int mistrustFramesStartup() const;
 	virtual unsigned int mistrustFramesModeSwitch() const;
-	virtual std::string getTuningData() const;
+	virtual std::string getTuningData(std::string target);
 	virtual void setI2C(int16_t i2c_bus, int16_t i2c_addr);
 
 protected:

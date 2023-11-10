@@ -290,7 +290,7 @@ void CamHelper::populateMetadata([[maybe_unused]] const MdParser::RegisterMap &r
 {
 }
 
-std::string CamHelper::getTuningData() const
+std::string CamHelper::getTuningData([[maybe_unused]] std::string target)
 {
 	return std::string();
 }

@@ -145,7 +145,7 @@ int32_t IpaBase::init(const IPASettings &settings, const InitParams &params, Ini
 	/* Load the tuning file for this sensor. */
 	int ret;
 	std::string error_info;
-	std::string tuningData = helper_->getTuningData();
+	std::string tuningData = helper_->getTuningData(target_);
 	if (tuningData.empty() || (configFromEnv && *configFromEnv != '\0')) {
 		ret = controller_.read(settings.configurationFile.c_str());
 		error_info = "Failed to load tuning data file " + settings.configurationFile;

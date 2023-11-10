@@ -62,6 +62,7 @@ protected:
 	/* Track the frame length times over FrameLengthsQueueSize frames. */
 	std::deque<utils::Duration> frameLengths_;
 	utils::Duration lastTimeout_;
+	std::string target_;
 
 private:
 	/* Number of metadata objects available in the context list. */
