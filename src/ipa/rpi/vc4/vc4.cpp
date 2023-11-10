@@ -42,6 +42,7 @@ public:
 	IpaVc4()
 		: IpaBase(), lsTable_(nullptr)
 	{
+		target_ = "vc4";
 	}
 
 	~IpaVc4()
