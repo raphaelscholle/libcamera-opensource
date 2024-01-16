@@ -140,19 +140,19 @@ struct GstLibcameraSrcState {
 // lbcamera "image (tuning)" params
 struct _GstLibcameraImageParams {
 	gint rotation=0;
-	gint hflip=0;
-	gint vflip=0;
-	gfloat sharpness=1.0;
-	gfloat contrast=1.0;
-	gfloat brightness=0.0;
-	gfloat saturation=1.0;
-	gfloat ev=0;
+	int hflip=0;
+	int vflip=0;
+	float sharpness=1.0;
+	float contrast=1.0;
+	float brightness=0.0;
+	float saturation=1.0;
+	float ev=0;
 	// These are strings in libcamera, int (enum) is easier though
-	gint exposure_index=0;
-	gint awb_index=0;
-	gint denoise_index=0;
-	gint shutter_microseconds=0;
-	gint metering_index=0;
+	int exposure_index=0;
+	int awb_index=0;
+	int denoise_index=0;
+	int shutter_microseconds=0;
+	int metering_index=0;
 };
 
 // Don't understand gstreamer and (default) initialization, quick workaround
