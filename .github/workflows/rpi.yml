@@ -39,7 +39,7 @@ jobs:
             meson build --buildtype=release -Dpipelines=rpi/vc4 -Dipas=rpi/vc4 -Dv4l2=true -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=enabled -Ddocumentation=disabled -Dpycamera=enabled -Dlibexecdir=/usr/lib/arm-linux-gnueabihf --prefix=/usr
             DESTDIR=/opt/libcamera-openhd/ ninja -C build install
             cp -r tuning/* /opt/libcamera-openhd/usr/share/libcamera/ipa/rpi/vc4/
-            fpm -a armhf -s dir -t deb -n libcamera-openhd -v 0.2.6 -C /opt/libcamera-openhd -p libcamera-openhd_VERSION_ARCH.deb --conflicts "libcamera-dev" --conflicts "libcamera0"
+            fpm -a armhf -s dir -t deb -n libcamera-openhd -v 1.2.6 -C /opt/libcamera-openhd -p libcamera-openhd_VERSION_ARCH.deb --conflicts "libcamera-dev" --conflicts "libcamera0"
 
     - name: Upload to Github
       uses: 'actions/upload-artifact@v2'
