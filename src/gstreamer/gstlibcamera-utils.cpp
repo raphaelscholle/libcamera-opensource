@@ -495,9 +495,11 @@ void gst_libcamera_clamp_and_set_frameduration(ControlList &initCtrls,
 		gst_structure_set(element_caps, "framerate", GST_TYPE_FRACTION,
 				  framerate_clamped, 1, nullptr);
 	}
-
+	// TODO merge fixme openhd consti10
+	//initCtrls.set(controls::FrameDurationLimits,
+	//	      { frame_duration, frame_duration });
 	initCtrls.set(controls::FrameDurationLimits,
-		      { frame_duration, frame_duration });
+		      Span<const int64_t, 2>({ frame_duration,frame_duration }));
 }
 
 void gst_libcamera_framerate_to_caps(GstCaps *caps, const GstStructure *element_caps)

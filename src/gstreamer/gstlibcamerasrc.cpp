@@ -35,6 +35,7 @@
 #include <libcamera/camera.h>
 #include <libcamera/camera_manager.h>
 #include <libcamera/control_ids.h>
+#include <libcamera/transform.h>
 
 #include <gst/base/base.h>
 
@@ -135,6 +136,87 @@ struct GstLibcameraSrcState {
 	int processRequest();
 };
 
+
+
+
+
+// Dirty Consti10 begin
+// lbcamera "image (tuning)" params
+struct _GstLibcameraImageParams {
+	gint rotation=0;
+	int hflip=0;
+	int vflip=0;
+	float sharpness=1.0;
+	float contrast=1.0;
+	float brightness=0.0;
+	float saturation=1.0;
+	float ev=0;
+	// These are strings in libcamera, int (enum) is easier though
+	int exposure_index=0;
+	int awb_index=0;
+	int denoise_index=0;
+	int shutter_microseconds=0;
+	int metering_index=0;
+};
+// Don't understand gstreamer and (default) initialization, quick workaround
+static void initialize_image_params(_GstLibcameraImageParams& image_params){
+	_GstLibcameraImageParams initialized{};
+	image_params=initialized;
+}
+static void write_image_params(_GstLibcameraImageParams* image_params,ControlList& control_list){
+	GST_WARNING("Image params: rotation: %d, sharpness: %f, contrast: %f, brightness: %f, saturation:%f, ev %f, exposure_index:%d, awb_index:%d, denoise_index:%d\n",
+		    image_params->rotation,image_params->sharpness,image_params->contrast,image_params->brightness,image_params->saturation,image_params->ev,
+		    image_params->exposure_index,image_params->awb_index,image_params->denoise_index
+		    );
+	namespace controls = libcamera::controls;
+	if (!control_list.get(controls::Sharpness))
+		control_list.set(controls::Sharpness, image_params->sharpness);
+	if (!control_list.get(controls::Contrast))
+		control_list.set(controls::Contrast,image_params->contrast);
+	if (!control_list.get(controls::Brightness))
+		control_list.set(controls::Brightness,image_params->brightness);
+	if (!control_list.get(controls::Saturation))
+		control_list.set(controls::Saturation,image_params->saturation);
+	if (!control_list.get(controls::ExposureValue))
+		control_list.set(controls::ExposureValue, image_params->ev);
+	if (!control_list.get(controls::AeExposureMode))
+		control_list.set(controls::AeExposureMode, image_params->exposure_index);
+	if (!control_list.get(controls::AwbMode))
+		control_list.set(controls::AwbMode, image_params->awb_index);
+	if(image_params->denoise_index !=0 ){
+		// apply if not default
+		if (!control_list.get(controls::draft::NoiseReductionMode))
+			control_list.set(controls::draft::NoiseReductionMode, image_params->denoise_index);
+	}
+	if (!control_list.get(controls::AeMeteringMode))
+		control_list.set(controls::AeMeteringMode, image_params->metering_index);
+	// Called shutter in libcamera doku
+	if (!control_list.get(controls::ExposureTime))
+		control_list.set(controls::ExposureTime, image_params->shutter_microseconds);
+}
+static libcamera::Transform transform_from_image_params(const _GstLibcameraImageParams& image_params){
+	libcamera::Transform transform = Transform::Identity;
+	if (image_params.hflip)
+		transform = Transform::HFlip * transform;
+	if (image_params.vflip)
+		transform = Transform::VFlip * transform;
+	bool ok;
+	Transform rot = libcamera::transformFromRotation(image_params.rotation, &ok);
+	if (!ok){
+		//throw std::runtime_error("illegal rotation value");
+		GST_WARNING("illegal rotation value");
+		return Transform::Identity;
+	}
+	transform = rot * transform;
+	if (!!(transform & Transform::Transpose)){
+		// throw std::runtime_error("transforms requiring transpose not supported");
+		// don't crash here, just log a warning and ignore
+		GST_WARNING("transforms requiring transpose not supported, ignoring");
+		return Transform::Identity;
+	}
+	return transform;
+}
+
 struct _GstLibcameraSrc {
 	GstElement parent;
 
@@ -147,11 +229,29 @@ struct _GstLibcameraSrc {
 	GstLibcameraSrcState *state;
 	GstLibcameraAllocator *allocator;
 	GstFlowCombiner *flow_combiner;
+	_GstLibcameraImageParams image_params{};
 };
 
 enum {
 	PROP_0,
 	PROP_CAMERA_NAME,
+	PROP_ROTATION,
+	PROP_HFLIP,
+	PROP_VFLIP,
+	//PROP_ROI ,//(=Zoom), too complicated (needs some 4 value crap)
+	PROP_SHARPNESS,
+	PROP_CONTRAST,
+	PROP_BRIGHTNESS,
+	PROP_SATURATION,
+	PROP_EV,
+	PROP_EXPOSURE,
+	PROP_AWB,
+	PROP_DENOISE,
+	PROP_SHUTTER_MICROSECONDS, // 0 means use default
+	PROP_METERING,
+	//PROP_GAIN - too complicated
+	//PROP_AWBGAINS - too complicated
+	// Dirty end
 	PROP_AUTO_FOCUS_MODE,
 };
 
@@ -489,6 +589,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
 		return;
 	}
 	g_assert(state->config_->size() == state->srcpads_.size());
+	state->config_->transform = transform_from_image_params(self->image_params);
 
 	for (gsize i = 0; i < state->srcpads_.size(); i++) {
 		GstPad *srcpad = state->srcpads_[i];
@@ -530,6 +631,8 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
 	/* Check frame duration bounds within controls::FrameDurationLimits */
 	gst_libcamera_clamp_and_set_frameduration(state->initControls_,
 						  state->cam_->controls(), element_caps);
+
+	write_image_params(&self->image_params,state->initControls_);
 
 	/*
 	 * Regardless if it has been modified, create clean caps and push the
@@ -574,6 +677,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
 		gst_libcamera_pad_set_pool(srcpad, pool);
 		gst_flow_combiner_add_pad(self->flow_combiner, srcpad);
 	}
+	// Set all the image controls
 
 	if (self->auto_focus_mode != controls::AfModeManual) {
 		const ControlInfoMap &infoMap = state->cam_->controls();
@@ -664,11 +768,57 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 	GLibLocker lock(GST_OBJECT(object));
 	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
 
+	_GstLibcameraImageParams* image_params = & self->image_params;
+
 	switch (prop_id) {
 	case PROP_CAMERA_NAME:
 		g_free(self->camera_name);
 		self->camera_name = g_value_dup_string(value);
 		break;
+	// Consti10 dirty
+	case PROP_ROTATION:
+		g_value_set_int(value, image_params->rotation);
+		break;
+	case PROP_HFLIP:
+		g_value_set_int(value, image_params->hflip);
+		break;
+	case PROP_VFLIP:
+		g_value_set_int(value, image_params->vflip);
+		break;
+	/*case PROP_ROI:
+		g_value_set_int(value, image_params->roi);
+		break;*/
+	case PROP_SHARPNESS:
+		g_value_set_float(value, image_params->sharpness);
+		break;
+	case PROP_CONTRAST:
+		g_value_set_float(value, image_params->contrast);
+		break;
+	case PROP_BRIGHTNESS:
+		g_value_set_float(value, image_params->brightness);
+		break;
+	case PROP_SATURATION:
+		g_value_set_float(value, image_params->saturation);
+		break;
+	case PROP_EV:
+		g_value_set_float(value, image_params->ev);
+		break;
+	case PROP_EXPOSURE:
+		g_value_set_int(value, image_params->exposure_index);
+		break;
+	case PROP_AWB:
+		g_value_set_int(value, image_params->awb_index);
+		break;
+	case PROP_DENOISE:
+		g_value_set_int(value, image_params->denoise_index);
+		break;
+	case PROP_SHUTTER_MICROSECONDS:
+		g_value_set_int(value, image_params->shutter_microseconds);
+		break;
+	case PROP_METERING:
+		g_value_set_int(value, image_params->metering_index);
+		break ;
+	// Dirty end
 	case PROP_AUTO_FOCUS_MODE:
 		self->auto_focus_mode = static_cast<controls::AfModeEnum>(g_value_get_enum(value));
 		break;
@@ -685,10 +835,56 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
 	GLibLocker lock(GST_OBJECT(object));
 	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
 
+	_GstLibcameraImageParams* image_params = & self->image_params;
+
 	switch (prop_id) {
 	case PROP_CAMERA_NAME:
 		g_value_set_string(value, self->camera_name);
 		break;
+	// Consti10 dirty
+	case PROP_ROTATION:
+		image_params->rotation = g_value_get_int(value);
+		break;
+	case PROP_HFLIP:
+		image_params->hflip = g_value_get_int(value);
+		break;
+	case PROP_VFLIP:
+		image_params->vflip = g_value_get_int(value);
+		break;
+	/*case PROP_ROI:
+		image_params->roi = g_value_get_int(value);
+		break ;*/
+	case PROP_SHARPNESS:
+		image_params->sharpness = g_value_get_float(value);
+		break;
+	case PROP_CONTRAST:
+		image_params->contrast = g_value_get_float(value);
+		break;
+	case PROP_BRIGHTNESS:
+		image_params->brightness = g_value_get_float(value);
+		break;
+	case PROP_SATURATION:
+		image_params->saturation = g_value_get_float(value);
+		break;
+	case PROP_EV:
+		image_params->ev = g_value_get_float(value);
+		break;
+	case PROP_EXPOSURE:
+		image_params->exposure_index = g_value_get_int(value);
+		break;
+	case PROP_AWB:
+		image_params->awb_index = g_value_get_int(value);
+		break;
+	case PROP_DENOISE:
+		image_params->denoise_index = g_value_get_int(value);
+		break;
+	case PROP_SHUTTER_MICROSECONDS:
+		image_params->shutter_microseconds = g_value_get_int(value);
+		break;
+	case PROP_METERING:
+		image_params->metering_index = g_value_get_int(value);
+		break ;
+	// Dirty end
 	case PROP_AUTO_FOCUS_MODE:
 		g_value_set_enum(value, static_cast<gint>(self->auto_focus_mode));
 		break;
@@ -752,6 +948,7 @@ gst_libcamera_src_finalize(GObject *object)
 {
 	GObjectClass *klass = G_OBJECT_CLASS(gst_libcamera_src_parent_class);
 	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
+	
 
 	g_rec_mutex_clear(&self->stream_lock);
 	g_clear_object(&self->task);
@@ -863,6 +1060,65 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
 							     | G_PARAM_READWRITE
 							     | G_PARAM_STATIC_STRINGS));
 	g_object_class_install_property(object_class, PROP_CAMERA_NAME, spec);
+
+	// Consti10 dirty
+	g_object_class_install_property (object_class, PROP_ROTATION,
+					g_param_spec_int ("rotation", "Rotation",
+							 "Rotate captured image (0, 90, 180, 270 degrees)", 0, 270, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_HFLIP,
+					g_param_spec_int ("hflip", "Horizontal flip",
+							 "TODO", 0, 1, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_VFLIP,
+					g_param_spec_int ("vflip", "Vertical flip",
+							 "TODO", 0, 1, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	/*g_object_class_install_property (object_class, PROP_ROI,
+					g_param_spec_int ("roi", "Region of interest (zoom)",
+							 "TODO", 0, 1, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));*/
+	g_object_class_install_property (object_class, PROP_SHARPNESS,
+					g_param_spec_float ("sharpness", "Sharpness",
+							   "TODO", -100, 100, 1.0,
+							   (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_CONTRAST,
+					g_param_spec_float ("contrast", "Contrast",
+							   "TODO", 0, 100, 1.0,
+							   (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_BRIGHTNESS,
+					g_param_spec_float ("brightness", "Brightness",
+							   "TODO", -1, 1, 0,
+							   (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_SATURATION,
+					g_param_spec_float ("saturation", "Saturation",
+							   "TODO", -1, 1, 0,
+							   (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_EV,
+					g_param_spec_float ("ev", "EV",
+							   "TODO", -10, 10, 0,
+							   (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_EXPOSURE,
+					g_param_spec_int ("exposure", "Exposure",
+							 "TODO", 0, 5, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_AWB,
+					g_param_spec_int ("awb", "AWB",
+							 "TODO", 0, 5, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_DENOISE,
+					g_param_spec_int ("denoise", "Denoise",
+							 "TODO", 0, 5, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_SHUTTER_MICROSECONDS,
+					g_param_spec_int ("shutter", "Shutter in microseconds",
+							 "TODO", 0, 10000, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	g_object_class_install_property (object_class, PROP_METERING,
+					g_param_spec_int ("metering", "Metering index",
+							 "TODO", 0, 3, 0,
+							 (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
+	// dirty end
 
 	spec = g_param_spec_enum("auto-focus-mode",
 				 "Set auto-focus mode",

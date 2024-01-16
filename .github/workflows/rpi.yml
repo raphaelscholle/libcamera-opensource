@@ -1,0 +1,73 @@
+name: Build RPI
+
+on: [push]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+    steps:
+   
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - uses: pguyot/arm-runner-action@v2 
+      id: build_image
+      with:
+        base_image: raspios_lite:latest
+        image_additional_mb: 4000
+        bind_mount_repository: true
+        import_github_env: true
+        commands: |
+            ls -a
+            sudo apt update
+            sudo apt install -y libboost-dev git python3-pip ruby-dev libgnutls28-dev openssl libtiff5-dev qtbase5-dev libqt5core5a libqt5gui5 libqt5widgets5 meson libegl1-mesa-dev cmake libboost-program-options-dev libdrm-dev libexif-dev libegl1-mesa-dev
+            sudo pip3 install pyyaml ply jinja2
+            sudo pip3 install --upgrade meson
+            gem install fpm
+            sudo apt install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+            mkdir -p /opt/libcamera-openhd
+            meson build --buildtype=release -Dpipelines=raspberrypi -Dipas=raspberrypi -Dv4l2=true -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=enabled -Ddocumentation=disabled -Dpycamera=enabled -Dlibexecdir=/usr/lib/arm-linux-gnueabihf --prefix=/usr
+            DESTDIR=/opt/libcamera-openhd/ ninja -C build install
+            cp -r tuning/* /opt/libcamera-openhd/usr/share/libcamera/ipa/raspberrypi/
+            fpm -a armhf -s dir -t deb -n libcamera-openhd -v 0.2.6 -C /opt/libcamera-openhd -p libcamera-openhd_VERSION_ARCH.deb --conflicts "libcamera-dev" --conflicts "libcamera0"
+
+    - name: Upload to Github
+      uses: 'actions/upload-artifact@v2'
+      with:
+        name: "libcamera"
+        path: |
+          /*.deb
+          *deb
+          *.log
+
+
+    - name: Push
+      id: push
+      uses: cloudsmith-io/action@master
+      with:
+        api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+        command: "push"
+        format: "deb"
+        owner: "openhd"
+        repo: "openhd-2-3-evo"
+        distro: "raspbian"
+        release: "bullseye"
+        republish: "true" # needed ONLY if version is not changing
+        file: "*deb"
+
+
+      #- name: Install
+      #  run: |
+      #    cd OpenHD/build
+      #    sudo cmake --install .
+      #- name: Build ninja
+      #  run: |
+      #    sudo apt -y install ninja-build
+      #    cd OpenHD
+      #    ./build_cmake.sh
