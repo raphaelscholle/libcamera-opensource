@@ -777,43 +777,43 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		g_value_set_int(const_cast<GValue*>(value), image_params->rotation);
 		break;
 	case PROP_HFLIP:
-		g_value_set_int(value, image_params->hflip);
+		g_value_set_int(const_cast<GValue*>(value), image_params->hflip);
 		break;
 	case PROP_VFLIP:
-		g_value_set_int(value, image_params->vflip);
+		g_value_set_int(const_cast<GValue*>(value), image_params->vflip);
 		break;
 	/*case PROP_ROI:
 		g_value_set_int(value, image_params->roi);
 		break;*/
 	case PROP_SHARPNESS:
-		g_value_set_float(value, image_params->sharpness);
+		g_value_set_float(const_cast<GValue*>(value), image_params->sharpness);
 		break;
 	case PROP_CONTRAST:
-		g_value_set_float(value, image_params->contrast);
+		g_value_set_float(const_cast<GValue*>(value), image_params->contrast);
 		break;
 	case PROP_BRIGHTNESS:
-		g_value_set_float(value, image_params->brightness);
+		g_value_set_float(const_cast<GValue*>(value), image_params->brightness);
 		break;
 	case PROP_SATURATION:
-		g_value_set_float(value, image_params->saturation);
+		g_value_set_float(const_cast<GValue*>(value), image_params->saturation);
 		break;
 	case PROP_EV:
-		g_value_set_float(value, image_params->ev);
+		g_value_set_float(const_cast<GValue*>(value), image_params->ev);
 		break;
 	case PROP_EXPOSURE:
-		g_value_set_int(value, image_params->exposure_index);
+		g_value_set_int(const_cast<GValue*>(value), image_params->exposure_index);
 		break;
 	case PROP_AWB:
-		g_value_set_int(value, image_params->awb_index);
+		g_value_set_int(const_cast<GValue*>(value), image_params->awb_index);
 		break;
 	case PROP_DENOISE:
-		g_value_set_int(value, image_params->denoise_index);
+		g_value_set_int(const_cast<GValue*>(value), image_params->denoise_index);
 		break;
 	case PROP_SHUTTER_MICROSECONDS:
-		g_value_set_int(value, image_params->shutter_microseconds);
+		g_value_set_int(const_cast<GValue*>(value), image_params->shutter_microseconds);
 		break;
 	case PROP_METERING:
-        g_value_set_int(value, image_params->metering_index);
+        g_value_set_int(const_cast<GValue*>(value), image_params->metering_index);
         break;
 	// Dirty end
 	case PROP_AUTO_FOCUS_MODE:
