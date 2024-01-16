@@ -774,7 +774,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		break;
 	// Consti10 dirty
 	case PROP_ROTATION:
-		g_value_set_int(value, image_params->rotation);
+		image_params->rotation = g_value_set_int(value);
 		break;
 	case PROP_HFLIP:
 		g_value_set_int(value, image_params->hflip);
@@ -813,7 +813,6 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		g_value_set_int(value, image_params->shutter_microseconds);
 		break;
 	case PROP_METERING:
-		GValue *mutableValue = const_cast<GValue*>(value);
         g_value_set_int(mutableValue, image_params->metering_index);
         break;
 	// Dirty end
