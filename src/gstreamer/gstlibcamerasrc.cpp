@@ -760,7 +760,7 @@ gst_libcamera_src_close(GstLibcameraSrc *self)
 
 static void
 gst_libcamera_src_set_property(GObject *object, guint prop_id,
-			       GValue *value, GParamSpec *pspec)
+			       const GValue *value, GParamSpec *pspec)
 {
 	GLibLocker lock(GST_OBJECT(object));
 	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
