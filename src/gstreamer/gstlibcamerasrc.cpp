@@ -136,10 +136,6 @@ struct GstLibcameraSrcState {
 	int processRequest();
 };
 
-
-
-
-
 // Dirty Consti10 begin
 // lbcamera "image (tuning)" params
 struct _GstLibcameraImageParams {
@@ -158,12 +154,12 @@ struct _GstLibcameraImageParams {
 	int shutter_microseconds=0;
 	int metering_index=0;
 };
-// rapha: apparently that's not used anymore
+
 // Don't understand gstreamer and (default) initialization, quick workaround
-// static void (_GstLibcameraImageParams& image_params){
-// 	_GstLibcameraImageParams initialized{};
-// 	image_params=initialized;
-// }
+static void initialize_image_params(_GstLibcameraImageParams& image_params){
+	_GstLibcameraImageParams initialized{};
+	image_params=initialized;
+}
 static void write_image_params(_GstLibcameraImageParams* image_params,ControlList& control_list){
 	GST_WARNING("Image params: rotation: %d, sharpness: %f, contrast: %f, brightness: %f, saturation:%f, ev %f, exposure_index:%d, awb_index:%d, denoise_index:%d\n",
 		    image_params->rotation,image_params->sharpness,image_params->contrast,image_params->brightness,image_params->saturation,image_params->ev,
