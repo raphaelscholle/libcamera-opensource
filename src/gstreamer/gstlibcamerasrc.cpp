@@ -152,7 +152,7 @@ struct _GstLibcameraImageParams {
 	int awb_index=0;
 	int denoise_index=0;
 	int shutter_microseconds=0;
-	int metering_index=0;
+	gint metering_index=0;
 };
 
 // Don't understand gstreamer and (default) initialization, quick workaround
