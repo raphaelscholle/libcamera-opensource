@@ -976,6 +976,7 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
 	/* C-style friend. */
 	state->src_ = self;
 	self->state = state;
+	initialize_image_params(state->src_->image_params);
 }
 
 static GstPad *
