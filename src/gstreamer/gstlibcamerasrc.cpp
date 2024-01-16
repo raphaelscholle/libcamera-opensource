@@ -772,7 +772,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		g_free(self->camera_name);
 		self->camera_name = g_value_dup_string(value);
 		break;
-	// Consti10 dirty
+	// Consti10/rapha dirty
 	case PROP_ROTATION:
 		image_params->rotation = g_value_set_int(value);
 		break;
@@ -836,7 +836,7 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
 
 	switch (prop_id) {
 	case PROP_CAMERA_NAME:
-		g_value_set_string(value, self->camera_name);
+		self->camera_name = g_value_dup_string(value);
 		break;
 	// Consti10 dirty
 	case PROP_ROTATION:
