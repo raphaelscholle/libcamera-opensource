@@ -24,6 +24,8 @@
 #include <libcamera/orientation.h>
 #include <libcamera/request.h>
 #include <libcamera/stream.h>
+#include <libcamera/transform.h>
+
 
 namespace libcamera {
 
@@ -91,6 +93,8 @@ public:
 
 	bool empty() const;
 	std::size_t size() const;
+
+	Transform transform;
 
 	std::optional<SensorConfiguration> sensorConfig;
 	Orientation orientation;
