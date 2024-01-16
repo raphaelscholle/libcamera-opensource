@@ -152,7 +152,7 @@ struct _GstLibcameraImageParams {
 	int awb_index=0;
 	int denoise_index=0;
 	int shutter_microseconds=0;
-	gint metering_index=0;
+	int metering_index=0;
 };
 
 // Don't understand gstreamer and (default) initialization, quick workaround
@@ -813,8 +813,9 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		g_value_set_int(value, image_params->shutter_microseconds);
 		break;
 	case PROP_METERING:
-		g_value_set_int(value, image_params->metering_index);
-		break ;
+		GValue *mutableValue = const_cast<GValue*>(value);
+        g_value_set_int(mutableValue, image_params->metering_index);
+        break;
 	// Dirty end
 	case PROP_AUTO_FOCUS_MODE:
 		self->auto_focus_mode = static_cast<controls::AfModeEnum>(g_value_get_enum(value));
