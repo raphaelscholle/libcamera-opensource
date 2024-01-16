@@ -30,7 +30,7 @@ jobs:
             sudo pip3 install pyyaml ply jinja2
             sudo pip3 install --upgrade meson
             gem install fpm
-            sudo apt install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+            sudo apt install -y libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev python3-pybind11
             curl -s --compressed "https://arducam.github.io/arducam_ppa/KEY.gpg" | sudo apt-key add -
             sudo curl -s --compressed -o /etc/apt/sources.list.d/arducam_list_files.list "https://arducam.github.io/arducam_ppa/arducam_list_files.list"
             sudo apt update
