@@ -813,7 +813,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		image_params->shutter_microseconds = g_value_set_int(value);
 		break;
 	case PROP_METERING:
-        image_params->metering_index = g_value_set_int(mutableValue);
+        image_params->metering_index = g_value_set_int(value);
         break;
 	// Dirty end
 	case PROP_AUTO_FOCUS_MODE:
