@@ -774,7 +774,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
 		break;
 	// Consti10/rapha dirty
 	case PROP_ROTATION:
-		g_value_set_int(value, static_cast<int>(image_params->rotation));
+		g_value_set_int(const_cast<GValue*>(value), image_params->rotation);
 		break;
 	case PROP_HFLIP:
 		g_value_set_int(value, image_params->hflip);
