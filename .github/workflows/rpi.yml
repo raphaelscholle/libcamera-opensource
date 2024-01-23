@@ -34,12 +34,14 @@ jobs:
             curl -s --compressed "https://arducam.github.io/arducam_ppa/KEY.gpg" | sudo apt-key add -
             sudo curl -s --compressed -o /etc/apt/sources.list.d/arducam_list_files.list "https://arducam.github.io/arducam_ppa/arducam_list_files.list"
             sudo apt update
-            sudo apt install arducam-pivariety-sdk-dev
+            sudo apt install -y arducam-pivariety-sdk-dev
             mkdir -p /opt/libcamera-openhd
             meson build --buildtype=release -Dpipelines=rpi/vc4 -Dipas=rpi/vc4 -Dv4l2=true -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=enabled -Ddocumentation=disabled -Dpycamera=enabled -Dlibexecdir=/usr/lib/arm-linux-gnueabihf --prefix=/usr
             DESTDIR=/opt/libcamera-openhd/ ninja -C build install
             cp -r tuning/* /opt/libcamera-openhd/usr/share/libcamera/ipa/rpi/vc4/
-            fpm -a armhf -s dir -t deb -n libcamera-openhd -v 1.2.6 -C /opt/libcamera-openhd -p libcamera-openhd_VERSION_ARCH.deb --conflicts "libcamera-dev" --conflicts "libcamera0"
+            sudo apt download arducam-pivariety-sdk-dev
+            dpkg -x arducam-pivariety-sdk-dev*.deb /opt/libcamera-openhd
+            fpm -a armhf -s dir -t deb -n libcamera-openhd -v 1.2.7 -C /opt/libcamera-openhd -p libcamera-openhd_VERSION_ARCH.deb --conflicts "libcamera-dev" --conflicts "libcamera0"
 
     - name: Upload to Github
       uses: 'actions/upload-artifact@v2'
