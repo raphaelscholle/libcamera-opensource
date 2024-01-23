@@ -41,6 +41,7 @@ jobs:
             cp -r tuning/* /opt/libcamera-openhd/usr/share/libcamera/ipa/rpi/vc4/
             sudo apt download arducam-pivariety-sdk-dev
             dpkg -x arducam-pivariety-sdk-dev*.deb /opt/libcamera-openhd
+            rm arducam-pivariety-sdk-dev*.deb
             fpm -a armhf -s dir -t deb -n libcamera-openhd -v 1.2.7 -C /opt/libcamera-openhd -p libcamera-openhd_VERSION_ARCH.deb --conflicts "libcamera-dev" --conflicts "libcamera0"
 
     - name: Upload to Github
